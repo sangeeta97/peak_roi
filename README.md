@@ -15,6 +15,7 @@ parses the mzxml file to generate the raw data. The multiprocessing modules can 
 * Thereafter, it takes data from the rest of scans (scan-wise) to be added into the bins of roi-seed if within the thresold otherwise add a new roi into the roi-seed.This process iterates untill data from all the scan were added to the roi-seed and finally generates the roi values.
 
 All the roi were filtered based on the criteria of having minimum number of points in the roi list, having intensity more than thresold values, and should not emcompasses more than 50% of the total scans of data.
+* The roi after filtering can be seen in roi_filtered.txt
 
 # peakfinal2.py
 
@@ -24,4 +25,5 @@ All the roi were filtered based on the criteria of having minimum number of poin
 * noise estimation and denoising using sg filter
 * and peak picking were performed using Scipy find peak using prominence and wlen as criteria.
 * Area were calculated using trapz (intergral function).
+* The identified peaks are listed in peak_highProminence.csv
 
