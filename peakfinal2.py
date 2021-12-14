@@ -18,7 +18,7 @@ def get_area(x, y):
     return max(0.0, area)
 
 
-# A class for holding an employees content
+# A class for holding an peak content
 @dataclass
 class PeakData:
     mzmin: float
