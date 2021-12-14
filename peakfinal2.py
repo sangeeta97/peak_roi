@@ -56,9 +56,9 @@ class Peaksworking():
 
 
     def peakchoose(self, i):
-        right= right_bases[i]
-        left= left_bases[i]
-        df3= df2[(df2.rt >= left) & (df2.rt <= right)]
+        right= self.right_bases[i]
+        left= self.left_bases[i]
+        df3= self.df2[(self.df2.rt >= left) & (self.df2.rt <= right)]
         if df3.index.size > 3:
             intensity= np.array(df3.intensity)
             rt= np.array(df3.rt)
@@ -79,9 +79,9 @@ class Peaksworking():
         try:
             df2=self.rawdata[self.rawdata.index.isin(ll)]
             outlier_datapoints = detect_outlier(df2.scan.tolist())
-            df2= df2[~df2['scan'].isin(outlier_datapoints)]
-            tt= np.array(df2.rt)
-            yy= np.array(df2.intensity)
+            self.df2= self.df2[~self.df2['scan'].isin(outlier_datapoints)]
+            tt= np.array(self.df2.rt)
+            yy= np.array(self.df2.intensity)
             interpolator = interpolate.interp1d(tt, yy, kind= 'linear')
             b = interpolator(np.arange(tt.min(), tt.max(), 1))
             rr= np.arange(tt.min(), tt.max(), 1)
@@ -93,7 +93,7 @@ class Peaksworking():
             return peaks, cx
 
         except:
-            pass
+            return np.array([]), 1
 
 
     def result(self):
@@ -104,12 +104,13 @@ class Peaksworking():
                 right_bases= cx['right_bases']
                 left_bases= cx['left_bases']
                 finaldata= list(map(self.peakchoose, range(len(peaks))))
-        object_list.extend(finaldata)
+                object_list.extend(finaldata)
+        
         objectnew= [asdict(x) for x in object_list if isinstance(x, PeakData)]
         df= pd.DataFrame(objectnew)
-        df.to_csv('/home/fs71579/skumari/selected_peaks4.csv')
+        df.to_csv('selected_peaks4.csv')
 
 
 if __name__ == "__main__":
-    obj123= Peaksworking('/home/fs71579/skumari/699_ph1.csv', '/home/fs71579/skumari/convertfinal.txt')
+    obj123= Peaksworking('699_ph1.csv', 'convertfinal.txt')
     obj123.result()
