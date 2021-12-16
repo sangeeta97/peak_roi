@@ -88,7 +88,7 @@ class Peaksworking():
             x= filter(b)
             diff= np.absolute(b-x)
             noise= np.mean(diff)
-            prominence= noise/4
+            prominence= noise
             peaks, cx = find_peaks(x, prominence= prominence, wlen= 39.1)
             return peaks, cx
 
