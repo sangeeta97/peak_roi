@@ -12,11 +12,20 @@ import json
 from dataclasses import dataclass
 from dataclasses import asdict
 from scipy import stats
+import matplotlib.pyplot as plt
+import scipy
+from scipy import stats
 
 
 def get_area(x, y):
     area = trapz(y, x)
     return max(0.0, area)
+
+
+def find_figure(x, y, z, a, b):
+    fig= plt.figure()
+    plt.plot(a, b, 'x')
+    fig.savefig(f'{z}.png')
 
 
 # A class for holding an employees content
@@ -56,6 +65,9 @@ class Peaksworking():
         self.rawdata = pd.read_csv(path1)
         self.roi= open(path2)
         self.roi= json.load(self.roi)
+        print(self.roi.keys())
+        self.b= np.array([10, 100, 1000, 2000, 200, 20])
+        self.test= False
 
 
 
@@ -63,12 +75,8 @@ class Peaksworking():
         right= self.right_bases[i]
         left= self.left_bases[i]
         df3= self.df2[(self.df2.rt >= left) & (self.df2.rt <= right)]
-
-
         mz= np.array(df3.mz)
-
         if df3.index.size > 8:
-
             intensity= np.array(df3.intensity)
             rt= np.array(df3.rt)
             interpolator = interpolate.interp1d(rt, intensity, kind= 'linear')
@@ -97,48 +105,60 @@ class Peaksworking():
 
 
     def pick(self, ll):
+        try:
+            if self.test:
+                df2=self.rawdata[self.rawdata.index.isin(ll)]
+                name= df2.mz.tolist()[0]
+                outlier_datapoints = detect_outlier(df2.scan.tolist())
+                self.df2= df2[~df2['scan'].isin(outlier_datapoints)]
+                tt= np.array(self.df2.rt)
+                yy= np.array(self.df2.intensity)
+                self.interpolator = interpolate.interp1d(tt, yy, kind= 'linear')
+                self.b = interpolator(np.arange(tt.min(), tt.max(), 1))
 
-        df2=self.rawdata[self.rawdata.index.isin(ll)]
+            else:
+                df2=self.rawdata[self.rawdata.index.isin(ll)]
+                name= df2.mz.tolist()[0]
+                outlier_datapoints = detect_outlier(df2.scan.tolist())
+                self.df2= df2[~df2['scan'].isin(outlier_datapoints)]
+                tt= np.array(self.df2.rt)
+                yy= np.array(self.df2.intensity)
+                interpolator = interpolate.interp1d(tt, yy, kind= 'linear')
+                b = interpolator(np.arange(tt.min(), tt.max(), 1))
 
-        outlier_datapoints = detect_outlier(df2.scan.tolist())
-        self.df2= df2[~df2['scan'].isin(outlier_datapoints)]
-        tt= np.array(self.df2.rt)
-        yy= np.array(self.df2.intensity)
-        interpolator = interpolate.interp1d(tt, yy, kind= 'linear')
+            result = stats.kruskal(self.b, b)
+            print(result)
+            if result.pvalue > 0.0005:
+                rr= np.arange(tt.min(), tt.max(), 1)
+                find_figure(rr, b, name, tt, yy)
+                x= filter(b)
+                diff= b-x
+                B = np.where(diff > 0)
+                self.smooth= diff[B]
+                first= self.smooth.min()
+                prominence= first*2
+                peaks, cx = find_peaks(x, prominence= prominence, wlen= 39.1)
+                print(cx)
+                return peaks, cx
 
-        b = interpolator(np.arange(tt.min(), tt.max(), 1))
-        rr= np.arange(tt.min(), tt.max(), 1)
-        x= filter(b)
-        diff= b-x
-        B = np.where(diff > 0)
-        self.smooth= diff[B]
-        first= self.smooth.min()
-        prominence= first*2
-        peaks, cx = find_peaks(x, prominence= prominence, wlen= 39.1)
-
-        return peaks, cx
-
-        # except:
-        #     return np.array([]), 1
+        except:
+            return np.array([]), 1
 
 
     def result(self):
         object_list= []
-        for i in self.roi.values():
-            peaks, cx= self.pick(i)
-
-            if peaks.size > 0:
-                self.right_bases= cx['right_bases']
-                self.left_bases= cx['left_bases']
-                finaldata= list(map(self.peakchoose, range(len(peaks))))
-
-
-                object_list.extend(finaldata)
-
-        objectnew= [asdict(x) for x in object_list if isinstance(x, PeakData)]
-
-        df= pd.DataFrame(objectnew)
-        df.to_csv('s1.csv')
+        for i, j in self.roi.items():
+            self.test= True if i == "162.99727494969818" else False
+            if self.pick(j):
+                peaks, cx= self.pick(j)
+                if peaks.size > 0:
+                    self.right_bases= cx['right_bases']
+                    self.left_bases= cx['left_bases']
+                    finaldata= list(map(self.peakchoose, range(len(peaks))))
+                    object_list.extend(finaldata)
+            objectnew= [asdict(x) for x in object_list if isinstance(x, PeakData)]
+            df= pd.DataFrame(objectnew)
+            df.to_csv('s1.csv')
 
 
 if __name__ == "__main__":
