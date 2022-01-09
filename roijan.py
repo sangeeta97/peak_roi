@@ -138,6 +138,7 @@ new_dict1= dict()
 
 def merge():
     b= np.array(b)
+    combine= combine_all()
     for j in combine:
         j= np.array(j)
         cy= b[j]
